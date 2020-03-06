@@ -11,12 +11,11 @@ MOMO_ORANGE = '253-193-0'
 
 # Input
 numberOfSets = 1 # Each set contains 12 cards an creates two DinA4 pages (front and back side)
-pdfFileName = "out/Momo-FanCards_1_Standard.pdf" #"Momo-FanCards_120_Premium.pdf"
-guidsFileName = "out/Momo-FanCards_1_Standard.txt" #"Momo-FanCards_120_Premium.txt"
+pdfFileName = "out/Momo-FanCards_1_Standard.pdf"
 frontImg = "Momo-FanCard-Front_744x744.png"
 imageFormat = "PNG"
 qrForegroundColor = MOMO_DARK
-qrBackgroundColor = MOMO_ORANGE #RED
+qrBackgroundColor = MOMO_ORANGE
 contentTemplate = "https://momo-music.de/fan?id={}"
 qrUriTemplate = "https://api.qrserver.com/v1/create-qr-code?data={}&size=238x238&bgcolor={}&color={}"
 
@@ -31,12 +30,25 @@ dinA4HeightMillis = 297
 marginLeftMillis = (dinA4WidthMillis - cardsPerRow*cardEdgeMillis - (cardsPerRow-1)*cuttingLineMillis) / 2
 marginTopMillis = (dinA4HeightMillis - rowsPerPage*cardEdgeMillis - (rowsPerPage-1)*cuttingLineMillis) / 2
 
-# Open file to write generated GUIDs to
-guidsFile = open(guidsFileName,"w+")
+# Generate QR-Code contents
+fanUris = []
+for _ in range(cardsPerRow*rowsPerPage*numberOfSets):
+    fanId = uuid.uuid4()
+    fanUri = contentTemplate.format(fanId)
+    fanUris.append(fanUri)
+    qrUri = qrUriTemplate.format(fanUri, qrBackgroundColor, qrForegroundColor)
 
-# Generate PDF
+# Generate card sets as PDF
 pdf = FPDF()
-for setNumber in range(numberOfSets):
+
+# The first pages lists all QR-Codes contents
+pdf.add_page()
+pdf.set_font('Arial', '', 8)
+pdf.write(4, "\n".join(fanUris))
+
+# Now create the card sets (front and back side)
+fanIndex = 0
+for _ in range(numberOfSets):
     # Create front page
     pdf.add_page()
     for row in range(rowsPerPage):
@@ -47,15 +59,13 @@ for setNumber in range(numberOfSets):
     pdf.add_page()
     for row in range(rowsPerPage):
         for col in range(cardsPerRow):
-            fanId = uuid.uuid4()
-            fanUri = contentTemplate.format(fanId)
+            fanUri = fanUris[fanIndex]
+            fanIndex += 1
             print(fanUri)
             qrUri = qrUriTemplate.format(fanUri, qrBackgroundColor, qrForegroundColor)
             x = marginLeftMillis+(cardEdgeMillis*(1-qrImgScale)/2)+(cuttingLineMillis+cardEdgeMillis)*col
             y = marginTopMillis+(cardEdgeMillis*(1-qrImgScale)/2)+(cuttingLineMillis+cardEdgeMillis)*row
             pdf.image(qrUri, x, y, cardEdgeMillis*qrImgScale, cardEdgeMillis*qrImgScale, imageFormat, qrUri)
-            guidsFile.write("{}\n".format(fanId))
 
 # Write PDF file
 pdf.output(pdfFileName, 'F')
-guidsFile.close()
