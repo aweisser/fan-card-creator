@@ -47,20 +47,23 @@ pdf.set_font('Arial', '', 8)
 pdf.write(4, "\n".join(fanUris))
 
 # Now create the card sets (front and back side)
-fanIndex = 0
+fanIndexFront = 0
+fanIndexBack = 0
 for _ in range(numberOfSets):
     # Create front page
     pdf.add_page()
     for row in range(rowsPerPage):
         for col in range(cardsPerRow):
-            pdf.image(frontImg, marginLeftMillis+(cuttingLineMillis+cardEdgeMillis)*col, marginTopMillis+(cuttingLineMillis+cardEdgeMillis)*row, cardEdgeMillis, cardEdgeMillis, imageFormat)    
+            fanUri = fanUris[fanIndexFront]
+            fanIndexFront += 1
+            pdf.image(frontImg, marginLeftMillis+(cuttingLineMillis+cardEdgeMillis)*col, marginTopMillis+(cuttingLineMillis+cardEdgeMillis)*row, cardEdgeMillis, cardEdgeMillis, imageFormat, fanUri)    
     
     # Create back page
     pdf.add_page()
     for row in range(rowsPerPage):
         for col in range(cardsPerRow):
-            fanUri = fanUris[fanIndex]
-            fanIndex += 1
+            fanUri = fanUris[fanIndexBack]
+            fanIndexBack += 1
             print(fanUri)
             qrUri = qrUriTemplate.format(fanUri, qrBackgroundColor, qrForegroundColor)
             x = marginLeftMillis+(cardEdgeMillis*(1-qrImgScale)/2)+(cuttingLineMillis+cardEdgeMillis)*col
